@@ -1,0 +1,13 @@
+name: elevator-yolo26
+channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+      - --trusted-host pypi.tuna.tsinghua.edu.cn
+      - ultralytics==8.4.123
+      - tensorboard==2.21.0
+      # Required by generate-parameter-library-py, an indirect dependency.
+      - typeguard
