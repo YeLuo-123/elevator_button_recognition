@@ -2,6 +2,29 @@
 
 本项目使用 Ultralytics YOLO26 训练电梯面板按钮目标检测模型，可识别楼层数字、开门、关门、上行、下行、报警、钥匙孔等按钮或面板元素。项目包含完整的数据集、预训练模型、训练脚本、图片批量测试脚本、视频预测脚本以及已经生成的训练和可视化结果。
 
+> [!IMPORTANT]
+> **推荐使用最新完成的优化模型：**
+> `runs/detect/elevator_yolo26m_optimized/weights/best.pt`
+>
+> 这是当前项目效果最好的可部署权重，验证集 `mAP@0.5` 为 **0.494**、`mAP@0.5:0.95` 为 **0.378**。下文正式测试和部署示例均优先使用该模型。
+
+使用新模型测试图片：
+
+```bash
+python test_yolo26.py \
+  --model runs/detect/elevator_yolo26m_optimized/weights/best.pt \
+  --output runs/predict/dianti_optimized_results
+```
+
+使用新模型测试视频：
+
+```bash
+python predict_video.py \
+  --model runs/detect/elevator_yolo26m_optimized/weights/best.pt \
+  --source fa476d4327584b23108fbfccce7f07e3.mp4 \
+  --output runs/predict/video_results/optimized_predicted.mp4
+```
+
 ## 1. 当前项目状态
 
 - 训练设备：NVIDIA GeForce RTX 3080 10GB
@@ -13,19 +36,19 @@
 - 训练图片：4386 张
 - 验证图片：540 张
 - 类别数：345
-- 训练轮次：100 epochs
-- 最佳权重：`runs/detect/elevator_yolo26m/weights/best.pt`
+- 优化训练计划：最多 200 epochs，Early Stopping 于第 147 轮停止
+- 优化模型最佳轮次：第 107 轮
+- **推荐权重：`runs/detect/elevator_yolo26m_optimized/weights/best.pt`**
 
-本次训练的最佳验证结果出现在第 86 轮附近：
+新旧模型在各自最佳 checkpoint 上的验证结果：
 
-| 指标 | 最佳值 |
-| --- | ---: |
-| Precision | 约 0.49 |
-| Recall | 约 0.27 |
-| mAP@0.5 | 约 0.289 |
-| mAP@0.5:0.95 | 约 0.218 |
+| 模型 | Precision | Recall | mAP@0.5 | mAP@0.5:0.95 |
+| --- | ---: | ---: | ---: | ---: |
+| 第一轮 `elevator_yolo26m` | 0.462 | 0.261 | 0.289 | 0.218 |
+| **新优化模型 `elevator_yolo26m_optimized`** | **0.591** | **0.437** | **0.494** | **0.378** |
+| 绝对提升 | +0.129 | +0.177 | +0.206 | +0.160 |
 
-> 实际推理应优先使用 `best.pt`，而不是 `last.pt`。
+> 新优化模型 Recall 提升明显，漏检更少。实际推理应使用优化实验的 `best.pt`，不要使用 `last.pt` 或中间的 `epoch*.pt`。
 
 ## 2. 项目目录结构
 
@@ -54,7 +77,9 @@ elevator/
 │       ├── images/                   # 验证图片
 │       └── labels/                   # YOLO 格式验证标签
 └── runs/
-    ├── detect/elevator_yolo26m/      # 训练日志、曲线、验证结果和权重
+    ├── detect/elevator_yolo26m/      # 第一轮模型及训练结果
+    ├── detect/elevator_yolo26m_optimized/
+    │   └── weights/best.pt           # 最新推荐模型
     └── predict/                      # 图片与视频预测结果
 ```
 
@@ -104,7 +129,7 @@ elevator/
 dianti(1)/dianti
 ```
 
-默认使用训练后的 `best.pt`，输出：
+脚本默认指向第一轮模型以保留原实验复现能力；正式测试时应通过 `--model` 指定新优化模型。脚本输出：
 
 - 带检测框、类别和置信度的逐张图片
 - `contact_sheet.jpg`：全部结果的汇总拼图
@@ -121,7 +146,7 @@ dianti(1)/dianti
 - `yolo26m.pt`：中型模型，精度潜力较高，是当前训练脚本的默认模型。
 - `yolo26n.pt`：轻量模型，训练和推理速度更快、显存占用更低，但精度通常低于 m 模型。
 
-这两个文件是训练起点，不是本项目训练完成后的最终权重。最终权重位于 `runs/detect/elevator_yolo26m/weights/`。
+这两个文件是训练起点，不是本项目训练完成后的最终权重。当前推荐的最终权重位于 `runs/detect/elevator_yolo26m_optimized/weights/best.pt`。
 
 ### 2.2 数据集文件
 
@@ -148,7 +173,7 @@ labels/example.txt
 
 ### 2.3 训练结果目录
 
-`runs/detect/elevator_yolo26m/` 中的主要文件：
+推荐模型及其完整评估结果位于 `runs/detect/elevator_yolo26m_optimized/`。第一轮结果保留在 `runs/detect/elevator_yolo26m/` 用于对照。两个目录的主要文件结构相同：
 
 | 文件 | 作用 |
 | --- | --- |
@@ -166,6 +191,12 @@ labels/example.txt
 | `train_batch*.jpg` | 训练批次及增强效果预览 |
 | `val_batch*_labels.jpg` | 验证集真实标签预览 |
 | `val_batch*_pred.jpg` | 验证集模型预测预览 |
+
+新模型的视频预测结果位于：
+
+```text
+runs/predict/video_results/fa476d4327584b23108fbfccce7f07e3_optimized_predicted.mp4
+```
 
 ## 3. 环境配置
 
@@ -340,18 +371,22 @@ http://localhost:6006
 也可以直接查看：
 
 ```text
-runs/detect/elevator_yolo26m/results.png
-runs/detect/elevator_yolo26m/results.csv
+runs/detect/elevator_yolo26m_optimized/results.png
+runs/detect/elevator_yolo26m_optimized/results.csv
 ```
 
 ## 5. 图片测试与可视化
 
 ### 5.1 测试默认图片目录
 
+推荐使用新优化模型：
+
 ```bash
 cd /home/fq/elevator
 conda activate elevator-yolo26
-python test_yolo26.py
+python test_yolo26.py \
+  --model runs/detect/elevator_yolo26m_optimized/weights/best.pt \
+  --output runs/predict/dianti_optimized_results
 ```
 
 默认结果目录：
@@ -402,17 +437,21 @@ python test_yolo26.py --conf 0.40 --iou 0.60
 
 ```bash
 python test_yolo26.py \
-  --model runs/detect/elevator_yolo26m_v2/weights/best.pt
+  --model /path/to/another/best.pt
 ```
 
 ## 6. 视频预测与可视化
 
 ### 6.1 预测默认视频
 
+推荐使用新优化模型：
+
 ```bash
 cd /home/fq/elevator
 conda activate elevator-yolo26
-python predict_video.py
+python predict_video.py \
+  --model runs/detect/elevator_yolo26m_optimized/weights/best.pt \
+  --output runs/predict/video_results/fa476d4327584b23108fbfccce7f07e3_optimized_predicted.mp4
 ```
 
 脚本默认输入：
@@ -445,7 +484,7 @@ python predict_video.py --conf 0.40
 
 ```bash
 python predict_video.py \
-  --model runs/detect/elevator_yolo26m_v2/weights/best.pt \
+  --model runs/detect/elevator_yolo26m_optimized/weights/best.pt \
   --source /path/to/input.mp4 \
   --output runs/predict/video_results/v2_output.mp4
 ```
@@ -460,7 +499,9 @@ python predict_video.py \
 
 ## 7. 模型效果与后续优化
 
-当前模型能在实拍图片和视频中识别常见楼层数字、开关门按钮、上下行按钮等目标，但整个数据集存在明显的长尾问题：
+新优化模型是当前项目的主要成果，能在实拍图片和视频中识别常见楼层数字、开关门按钮、上下行按钮等目标。与第一轮相比，`mAP@0.5` 从 0.289 提升至 0.494，`mAP@0.5:0.95` 从 0.218 提升至 0.378，Recall 从 0.261 提升至 0.437。
+
+尽管新模型提升明显，整个数据集仍存在长尾问题：
 
 - 345 个类别对于当前数据量来说过多。
 - 训练集中有 29 类没有实例。
@@ -518,7 +559,11 @@ python train_yolo26.py --model yolo26n.pt --name elevator_yolo26n
 runs/detect/elevator_yolo26m/weights/best.pt
 ```
 
-如果使用了其他实验名，需要通过 `--model` 指定实际路径。
+这是为了兼容第一轮实验。推荐显式指定新模型：
+
+```bash
+--model runs/detect/elevator_yolo26m_optimized/weights/best.pt
+```
 
 ### 找不到测试图片
 
@@ -558,10 +603,10 @@ python train_yolo26_optimized.py
 python train_yolo26.py --name elevator_yolo26m_v2 --resume
 
 # 批量测试图片
-python test_yolo26.py
+python test_yolo26.py --model runs/detect/elevator_yolo26m_optimized/weights/best.pt
 
 # 测试视频
-python predict_video.py
+python predict_video.py --model runs/detect/elevator_yolo26m_optimized/weights/best.pt
 
 # 查看训练曲线
 tensorboard --logdir runs --port 6006
