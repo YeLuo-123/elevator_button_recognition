@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 *.cache
 .DS_Store
+
+# Keep the deployable best.pt, but do not version large optimizer checkpoints.
+runs/detect/*/weights/epoch*.pt
+runs/detect/*/weights/last.pt

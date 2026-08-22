@@ -35,6 +35,7 @@ elevator/
 ├── README_TRAIN.md                   # 早期的简版训练说明
 ├── environment.yml                   # Conda 环境及 Python 依赖配置
 ├── train_yolo26.py                   # 模型训练脚本
+├── train_yolo26_optimized.py         # 第二轮优化训练启动脚本
 ├── test_yolo26.py                    # 图片/图片目录批量预测脚本
 ├── predict_video.py                  # 视频逐帧预测和可视化脚本
 ├── yolo26m.pt                        # YOLO26m COCO 预训练权重，默认训练起点
@@ -90,6 +91,10 @@ elevator/
 | `--seed` | `42` | 随机种子 |
 
 脚本还默认启用 AMP 混合精度、余弦学习率、验证、训练曲线和权重保存。
+
+#### `train_yolo26_optimized.py`
+
+第二轮优化训练入口，不会覆盖第一轮实验。默认重新从 `yolo26m.pt` 训练 200 轮，使用固定 batch size 4、AdamW、较低初始学习率，并针对当前已经离线增强 3 倍的数据集减弱在线几何增强。脚本关闭水平翻转，避免改变开门/关门图标的方向语义；启动训练前还会检查数据路径、标签范围和长尾类别分布。
 
 #### `test_yolo26.py`
 
@@ -221,7 +226,49 @@ runs/detect/elevator_yolo26m/
 
 如果该目录已经存在，Ultralytics 会避免直接覆盖已有实验。再次训练时建议设置新的实验名。
 
-### 4.2 自定义训练参数
+### 4.2 启动第二轮优化训练
+
+推荐先从官方预训练权重重新训练，以便和第一轮结果公平比较：
+
+```bash
+python train_yolo26_optimized.py
+```
+
+默认输出目录：
+
+```text
+runs/detect/elevator_yolo26m_optimized/
+```
+
+如果希望从第一轮的 `best.pt` 开始微调，并重新开启完整学习率周期：
+
+```bash
+python train_yolo26_optimized.py \
+  --from-best \
+  --name elevator_yolo26m_finetune
+```
+
+优化版默认调整包括：
+
+- `epochs=200`、`patience=40`、`batch=4`
+- `optimizer=AdamW`、`lr0=0.001`、余弦学习率
+- `fliplr=0.0`，禁止方向敏感图标水平翻转
+- `mosaic=0.5`，并在最后 20 轮关闭 Mosaic
+- `translate=0.05`、`scale=0.3`
+- 降低 HSV 色彩增强，关闭 MixUp、CutMix 和 Copy-Paste
+- 每 10 轮保存一次阶段权重
+
+自定义轮次和实验名称：
+
+```bash
+python train_yolo26_optimized.py \
+  --epochs 250 \
+  --batch 4 \
+  --patience 50 \
+  --name elevator_yolo26m_optimized_v2
+```
+
+### 4.3 自定义原始训练参数
 
 例如训练 200 轮、固定 batch size 为 4，并使用新实验名：
 
@@ -254,7 +301,7 @@ python train_yolo26.py --device cpu --workers 4 --batch 2
 python train_yolo26.py --help
 ```
 
-### 4.3 恢复被中断的训练
+### 4.4 恢复被中断的训练
 
 恢复默认实验：
 
@@ -270,7 +317,13 @@ python train_yolo26.py --name elevator_yolo26m_v2 --resume
 
 恢复功能读取对应实验目录中的 `weights/last.pt`。它适合继续一次意外中断的训练；如果原训练已经正常完成、只是希望增加总轮次，建议从权重启动一个新的实验并重新设置学习率周期。
 
-### 4.4 查看训练过程
+优化版实验的恢复方法相同：
+
+```bash
+python train_yolo26_optimized.py --resume
+```
+
+### 4.5 查看训练过程
 
 启动 TensorBoard：
 
@@ -499,7 +552,7 @@ conda activate elevator-yolo26
 python train_yolo26.py
 
 # 新实验训练 200 轮
-python train_yolo26.py --epochs 200 --batch 4 --name elevator_yolo26m_v2
+python train_yolo26_optimized.py
 
 # 恢复中断的训练
 python train_yolo26.py --name elevator_yolo26m_v2 --resume
