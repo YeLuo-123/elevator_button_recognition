@@ -20,14 +20,14 @@ from ultralytics import YOLO
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA = ROOT / "configs" / "dataset.yaml"
-DEFAULT_MODEL = ROOT / "models" / "yolo26m.pt"
+DEFAULT_MODEL = "yolo26m.pt"
 DEFAULT_PROJECT = ROOT / "runs" / "detect"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Launch optimized YOLO26 elevator-button training")
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA, help="dataset YAML path")
-    parser.add_argument("--model", type=Path, default=DEFAULT_MODEL, help="initial weights")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="Ultralytics base-model name or local initial weights")
     parser.add_argument("--epochs", type=int, default=200, help="maximum training epochs")
     parser.add_argument("--imgsz", type=int, default=640, help="training image size")
     parser.add_argument("--batch", type=int, default=4, help="batch size for a 10 GB RTX 3080")
@@ -90,7 +90,7 @@ def audit_dataset(data_yaml: Path) -> None:
 def main() -> None:
     args = parse_args()
     data = args.data.expanduser().resolve()
-    initial_weights = args.model.expanduser().resolve()
+    initial_weights: str | Path = args.model
     run_dir = DEFAULT_PROJECT / args.name
 
     if not data.is_file():
@@ -113,9 +113,9 @@ def main() -> None:
         )
 
     if args.from_best:
-        initial_weights = DEFAULT_PROJECT / "elevator_yolo26m" / "weights" / "best.pt"
-    if not initial_weights.is_file():
-        raise FileNotFoundError(f"Initial model weights not found: {initial_weights}")
+        initial_weights = ROOT / "models" / "best.pt"
+        if not initial_weights.is_file():
+            raise FileNotFoundError(f"Trained checkpoint not found: {initial_weights}")
 
     audit_dataset(data)
     print(f"Initial weights: {initial_weights}")

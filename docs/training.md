@@ -1,7 +1,7 @@
 # YOLO26 电梯按钮训练
 
 环境已经安装为 `elevator-yolo26`，训练脚本默认使用项目根目录下的
-`models/yolo26m.pt`，在 RTX 3080 上训练 100 个 epoch。批量大小由 Ultralytics
+YOLO 官方 `yolo26m.pt` 预训练权重，在 RTX 3080 上训练 100 个 epoch。基础权重由 Ultralytics 自动下载，不放入 `models/`；批量大小由 Ultralytics
 按可用显存自动选择。
 
 启动训练：

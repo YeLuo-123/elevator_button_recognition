@@ -16,13 +16,13 @@ from ultralytics import YOLO
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA = ROOT / "configs" / "dataset.yaml"
-DEFAULT_MODEL = ROOT / "models" / "yolo26m.pt"
+DEFAULT_MODEL = "yolo26m.pt"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train an elevator-button YOLO26 detector")
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA, help="dataset YAML path")
-    parser.add_argument("--model", type=Path, default=DEFAULT_MODEL, help="initial YOLO26 weights")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="Ultralytics base-model name or local initial weights")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument(
@@ -44,7 +44,6 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     data = args.data.expanduser().resolve()
-    weights = args.model.expanduser().resolve()
     run_dir = ROOT / "runs" / "detect" / args.name
 
     if not data.is_file():
@@ -60,10 +59,8 @@ def main() -> None:
         model.train(resume=True)
         return
 
-    if not weights.is_file():
-        raise FileNotFoundError(f"Initial model weights not found: {weights}")
-
-    model = YOLO(weights)
+    # A bare model name is downloaded and cached automatically by Ultralytics.
+    model = YOLO(args.model)
     model.train(
         data=str(data),
         epochs=args.epochs,

@@ -49,11 +49,10 @@ python -m pip install -r requirements.txt
 
 ```text
 models/best.pt       # 推荐部署权重（需自行从训练结果复制）
-models/yolo26m.pt    # 训练初始权重
 models/model.onnx    # 可选 ONNX 导出
 ```
 
-`.gitignore` 会忽略模型文件，防止误写入普通 Git。GitHub 普通文件硬限制为 100 MB；需要协作共享权重时请使用 Git LFS：
+`models/` 只存放本项目训练或导出的模型，不存放 YOLO 官方基础模型。训练脚本默认使用 `yolo26m.pt` 模型名，由 Ultralytics 自动下载到本机缓存。其他模型文件默认忽略；`models/best.pt` 作为部署模型通过 Git LFS 共享。GitHub 普通文件硬限制为 100 MB：
 
 ```bash
 git lfs install
@@ -100,8 +99,8 @@ X_world = X' / W',  Y_world = Y' / W',  Z_world = fixed_z
 ## 训练
 
 ```bash
-python scripts/train_detector.py --data configs/dataset.yaml --model models/yolo26m.pt
-python scripts/train_detector_optimized.py --data configs/dataset.yaml --model models/yolo26m.pt
+python scripts/train_detector.py --data configs/dataset.yaml --model yolo26m.pt
+python scripts/train_detector_optimized.py --data configs/dataset.yaml --model yolo26m.pt
 ```
 
 训练默认值位于 `configs/model_hyperparameters.yaml`，实验说明见 `docs/training.md`。

@@ -17,6 +17,8 @@ models/*.pt
 models/*.onnx
 models/*.engine
 models/*.bin
+# The trained deployment checkpoint is intentionally shared through Git LFS.
+!models/best.pt
 
 # Training checkpoints must never enter ordinary Git history.
 **/weights/epoch*.pt
