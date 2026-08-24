@@ -1,0 +1,7 @@
+model: models/best.pt
+confidence: 0.25
+iou: 0.70
+image_size: 640
+device: "0"
+camera: 0
+trigger_arm: false

@@ -1,0 +1,10 @@
+# Replace these example values with values measured on the target installation.
+# Planar mapping: [X, Y, W]^T = H * [u, v, 1]^T; Xw=X/W, Yw=Y/W.
+method: homography
+units: mm
+homography:
+  - [1.0, 0.0, 0.0]
+  - [0.0, 1.0, 0.0]
+  - [0.0, 0.0, 1.0]
+fixed_z: 0.0
+tool_orientation: [0.0, 0.0, 0.0]

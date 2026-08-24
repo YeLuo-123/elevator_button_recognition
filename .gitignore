@@ -2,7 +2,22 @@ __pycache__/
 *.py[cod]
 *.cache
 .DS_Store
+.pytest_cache/
+.coverage
+.venv/
+.idea/
+.vscode/
 
-# Keep the deployable best.pt, but do not version large optimizer checkpoints.
-runs/detect/*/weights/epoch*.pt
-runs/detect/*/weights/last.pt
+# Generated outputs and local datasets
+runs/
+outputs/
+
+# Model binaries are large. Keep them outside normal Git; use Git LFS if shared.
+models/*.pt
+models/*.onnx
+models/*.engine
+models/*.bin
+
+# Training checkpoints must never enter ordinary Git history.
+**/weights/epoch*.pt
+**/weights/last.pt

@@ -8,6 +8,12 @@ dependencies:
       - --index-url https://pypi.tuna.tsinghua.edu.cn/simple
       - --trusted-host pypi.tuna.tsinghua.edu.cn
       - ultralytics==8.4.123
+      - opencv-python>=4.10,<5
+      - numpy>=1.26,<3
+      - PyYAML>=6,<7
+      - Pillow>=10,<12
+      - pyserial>=3.5,<4
+      - pytest>=8,<9
       - tensorboard==2.21.0
       # Required by generate-parameter-library-py, an indirect dependency.
       - typeguard

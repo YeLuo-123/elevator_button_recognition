@@ -1,0 +1,10 @@
+epochs: 200
+image_size: 640
+batch: 4
+device: "0"
+workers: 8
+optimizer: AdamW
+learning_rate: 0.001
+weight_decay: 0.0005
+patience: 40
+seed: 42
