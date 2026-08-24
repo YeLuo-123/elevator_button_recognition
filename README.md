@@ -31,6 +31,12 @@
 
 模型属于目标检测模型，不是通用 OCR，也不会可靠识别训练类别之外的任意文字或按钮。实际效果会受到拍摄角度、反光、遮挡、按钮尺寸和现场面板样式影响；真机部署前应使用目标电梯的现场图片重新验证，必要时补充数据进行微调。
 
+### 检测效果示例
+
+下图为 `models/best.pt` 对电梯面板测试图片的实际检测结果。检测框上显示模型识别出的按钮类别和置信度：
+
+![电梯按钮模型检测结果](docs/test_media/results/detection_example.jpg)
+
 ## 目录结构
 
 ```text
@@ -101,6 +107,33 @@ git lfs pull
 python -m inference.detect_images --model models/best.pt --source docs/test_media/images --device 0
 python -m inference.detect_video --model models/best.pt --source docs/test_media/sample_video.mp4 --device 0
 ```
+
+### 使用 docs 文件夹测试模型
+
+`docs/test_media/` 已提供可直接用于验收的测试素材：
+
+- `docs/test_media/images/`：电梯面板测试图片。
+- `docs/test_media/sample_video.mp4`：测试视频。
+- `docs/test_media/results/detection_example.jpg`：已生成的检测效果示例。
+
+拉取模型和 LFS 测试素材后，可直接运行：
+
+```bash
+git lfs pull
+python -m inference.detect_images \
+  --model models/best.pt \
+  --source docs/test_media/images \
+  --output runs/predict/docs_image_results \
+  --device 0
+
+python -m inference.detect_video \
+  --model models/best.pt \
+  --source docs/test_media/sample_video.mp4 \
+  --output runs/predict/docs_video_result.mp4 \
+  --device 0
+```
+
+图片检测会输出标注图片、`detections.csv` 和汇总图；视频检测会输出带检测框的视频。生成结果保存在 `runs/predict/`，该目录已被 Git 忽略，不会污染仓库。
 
 摄像头与机械臂回调（Mock 模式）：
 
