@@ -2,6 +2,35 @@
 
 本项目使用 Ultralytics YOLO 检测电梯按钮，把检测框中心的像素坐标转换为机械臂世界坐标，并通过可替换的回调接口触发按键动作。默认机械臂实现是 `MockArmController`，只打印指令，不会驱动真实设备。
 
+## 已完成的模型训练工作
+
+本项目已经完成模型训练，并非只提供训练代码。当前可直接部署的权重是 `models/best.pt`，它来自 `elevator_yolo26m_optimized` 优化实验，已通过 Git LFS 上传到仓库。
+
+- 基础网络：YOLO26m 预训练模型。
+- 数据集：Roboflow Elevator Buttons Original Version v10，配置在 `configs/dataset.yaml`。
+- 类别数量：345 类。
+- 训练输入尺寸：640×640。
+- 训练设备：NVIDIA RTX 3080，batch size 为 4。
+- 优化方式：AdamW、余弦学习率、AMP 混合精度；针对电梯开关门等方向敏感图标关闭水平和垂直翻转，并降低在线几何增强强度。
+- 训练过程：最大计划 200 epoch，实际完成 147 epoch，并按照验证集表现保存最佳权重。
+- 最佳验证结果：第 107 epoch 的 Precision 为 0.5908、Recall 为 0.4374、mAP@0.5 为 0.4944、mAP@0.5:0.95 为 0.3779。
+
+以上指标来自本机保留的 `runs/detect/elevator_yolo26m_optimized/results.csv`。`runs/` 属于可再生成的训练产物，因此不提交 Git；部署使用的最佳权重单独保存在 `models/best.pt`。
+
+## 模型功能
+
+`models/best.pt` 是电梯面板目标检测模型，主要提供以下能力：
+
+- 在图片、视频或摄像头画面中定位一个或多个电梯按钮，并输出检测框坐标。
+- 为每个检测目标输出类别名称、类别编号和置信度。
+- 识别数据集定义的楼层按钮，例如数字、字母及地下楼层组合标签。
+- 识别 `open`、`close`、`up`、`down`、`alarm`、`call`、`stop`、`switch` 等常见功能按钮或图标。
+- 检测部分面板文字、指示灯、钥匙孔、扬声器等数据集中已标注的元素。
+- 计算检测框中心像素 `(u,v)`，供手眼标定模块转换为机械臂世界坐标。
+- 通过目标类别和最低置信度过滤识别结果，再调用机械臂回调执行按键动作。
+
+模型属于目标检测模型，不是通用 OCR，也不会可靠识别训练类别之外的任意文字或按钮。实际效果会受到拍摄角度、反光、遮挡、按钮尺寸和现场面板样式影响；真机部署前应使用目标电梯的现场图片重新验证，必要时补充数据进行微调。
+
 ## 目录结构
 
 ```text
@@ -48,7 +77,7 @@ python -m pip install -r requirements.txt
 所有部署权重放在 `models/`：
 
 ```text
-models/best.pt       # 推荐部署权重（需自行从训练结果复制）
+models/best.pt       # 已完成训练的推荐部署权重
 models/model.onnx    # 可选 ONNX 导出
 ```
 
@@ -68,7 +97,7 @@ git push
 ## 模型推理
 
 ```bash
-cp runs/detect/elevator_yolo26m_optimized/weights/best.pt models/best.pt
+git lfs pull
 python -m inference.detect_images --model models/best.pt --source docs/test_media/images --device 0
 python -m inference.detect_video --model models/best.pt --source docs/test_media/sample_video.mp4 --device 0
 ```
