@@ -5,12 +5,17 @@ __pycache__/
 .pytest_cache/
 .coverage
 .venv/
+.venv-*/
 .idea/
 .vscode/
 
 # Generated outputs and local datasets
 runs/
 outputs/
+datasets/
+tmp/
+test.mp4
+_req_dump.txt
 
 # Model binaries are large. Keep them outside normal Git; use Git LFS if shared.
 models/*.pt
