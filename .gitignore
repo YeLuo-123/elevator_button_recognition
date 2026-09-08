@@ -28,3 +28,7 @@ models/*.bin
 # Training checkpoints must never enter ordinary Git history.
 **/weights/epoch*.pt
 **/weights/last.pt
+
+# Full offline delivery bundles and local base model
+dist/
+models/Qwen3-VL-2B-Instruct/

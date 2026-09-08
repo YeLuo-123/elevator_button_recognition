@@ -25,7 +25,46 @@ python -m pip install -r requirements.txt
 python -m inference.detect_images --model models/best.pt --source docs/test_media/images --device cpu
 ```
 
-上述命令运行 YOLO 图片检测。GPU 推理使用 `--device 0`，并确保环境安装了兼容驱动的 CUDA 版 PyTorch。Qwen 训练与视频测试还需安装 `requirements-qwen.txt`，并准备基模和微调适配器，见下文。
+上述命令运行 YOLO 图片检测。GPU 推理使用 `--device 0`，并确保环境安装了兼容驱动的 CUDA 版 PyTorch。Qwen 训练与视频测试还需安装 `requirements-qwen.txt`，首次联网下载基模；本仓库已提供成品微调适配器，见下文。
+
+## 同事直接运行成品亮暗模型
+
+### 从 GitHub 克隆（首次运行联网）
+
+```bash
+git clone https://github.com/YeLuo-123/elevator_button_recognition.git
+cd elevator_button_recognition
+git lfs install
+git lfs pull --include="models/best.pt,models/button_state_lora/*"
+python3.11 -m venv .venv
+source .venv/bin/activate
+# 先安装与本机 NVIDIA 驱动兼容的 CUDA 版 PyTorch，再安装项目依赖
+python -m pip install -r requirements-qwen.txt
+python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+python scripts/run_button_state.py --source /path/to/video.mp4
+```
+
+本项目成品使用 NVIDIA GPU；本机在 RTX 3080 10 GB 上验证。若显存不足可加 `--batch 2`。运行入口自动使用仓库内成品 LoRA，首次从 `Qwen/Qwen3-VL-2B-Instruct` 下载约 4.26 GB 基模，需要能访问 Hugging Face；也可以通过 `--base /path/to/Qwen3-VL-2B-Instruct` 指定本地基模。无需训练数据。
+
+结果默认写入 `runs/predict/button_state_<时间>/`：`temporal/temporal.mp4` 是带框结果，`temporal/comparison.mp4` 是逐帧与防跳变对比。可用 `--output /path/to/new-output` 指定尚不存在的目录。视频较长时内存占用和推理时间会增加，当前仍为离线处理。
+
+### 完整压缩包（无需下载模型）
+
+GitHub 拒绝上传超过该仓库单文件限制的基模，因此另行提供 `elevator-button-state-full-20260908.tar.gz`，由项目持有人直接转交。压缩包包含运行代码、YOLO 成品、LoRA 成品、Qwen 基模、基模许可说明、依赖清单与逐文件 SHA-256；不包含训练数据、虚拟环境或训练中间检查点。
+
+```bash
+tar -xzf elevator-button-state-full-20260908.tar.gz
+cd elevator-button-state-full-20260908
+sha256sum -c SHA256SUMS
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-qwen.txt
+python scripts/run_button_state.py --source /path/to/video.mp4
+```
+
+仍需自行安装 NVIDIA 驱动、兼容的 CUDA 版 PyTorch 和 Python 依赖。脚本优先使用压缩包内 `models/Qwen3-VL-2B-Instruct/`，无需再下载模型。需要隔离网络验证模型加载时可设置 `HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1`。本包未附带离线依赖安装包。
+
+GitHub 的 “Download ZIP” 不应视为完整权重包；如果其中是 LFS 指针，请改用 `git clone` 加 `git lfs pull`，或使用上述完整版压缩包。
 
 ## 已完成的模型训练工作
 
@@ -349,4 +388,4 @@ python scripts/test_temporal_video.py \
 
 仓库包含代码、依赖说明、已通过 Git LFS 管理的 YOLO 权重、原 Roboflow 检测数据与已有测试素材。亮暗标注 `datasets/`、训练结果 `runs/`、虚拟环境、临时文件及本机输入 `test.mp4` 不纳入此次提交。
 
-**Qwen 基模和已训练 LoRA 适配器尚未随仓库分发。** 新机器可运行 YOLO 检测；复现亮暗结果需另行准备对应标注与适配器，或按上述流程自行训练。本次已完成实验的适配器位于本机 `runs/button_state/qwen3_vl_2b_lora_20260907/training/final_adapter/`，使用它测试时应替换示例中的适配器路径。检测数据来源和使用条款见原数据目录的 `README.dataset.txt`、`README.roboflow.txt`。
+**已训练 LoRA 适配器现已通过 Git LFS 分发在 `models/button_state_lora/`，无需重新标注或训练即可运行亮暗检测。** Qwen 基模不在 Git 仓库中：其单文件为 4,255,140,312 字节，2026-09-08 GitHub LFS 实际返回 422，要求不超过 2,147,483,648 字节。联网版首次运行自动下载基模；完整版压缩包提供本地基模。检测数据来源和使用条款见原数据目录的 `README.dataset.txt`、`README.roboflow.txt`。
