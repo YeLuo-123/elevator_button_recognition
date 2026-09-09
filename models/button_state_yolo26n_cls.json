@@ -1,0 +1,23 @@
+{
+  "model": "button_state_yolo26n_cls.pt",
+  "task": "classify",
+  "classes": ["OFF", "ON"],
+  "input": "single-button crop with 25% padding",
+  "imgsz": 224,
+  "base_model": "yolo26n-cls.pt",
+  "selected_epoch": 1,
+  "completed_epochs": 13,
+  "early_stopping_patience": 12,
+  "training_real_samples": 8541,
+  "training_samples_after_balancing": 12884,
+  "validation_samples": 1067,
+  "test_samples": 1067,
+  "test_accuracy": 0.8903467666,
+  "test_on_precision": 0.7126099707,
+  "test_on_recall": 0.9274809160,
+  "test_on_f1": 0.8059701493,
+  "on_threshold": 0.5299801230,
+  "sha256": "42fcc8cd8835b09f727ae0e44956bc3346f0885d57f05d743c45561dc1410113",
+  "trained_at": "2026-09-09",
+  "notes": "Source groups do not overlap across train, val and test. UNCERTAIN and SKIP labels were excluded."
+}

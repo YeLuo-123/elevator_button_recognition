@@ -384,6 +384,38 @@ python scripts/test_temporal_video.py \
 
 当前视频脚本将整段视频读入内存，适用于短片离线测试。本次 160 帧、1,593 个按钮裁剪的模型测试约耗时 215 秒，尚不具备实时处理速度。
 
+### 轨迹缓存加速版
+
+`test_hybrid_button_state_video.py` 使用 YOLO 检测按钮并快速筛选状态变化事件，只在新轨迹、定时复核、亮度突变或轻量分类器提示 ON 时调用 Qwen。每条按钮轨迹缓存最近状态；ON 立即生效，普通 OFF 延迟确认，亮度回落到点亮前基线附近后经两次 Qwen 确认再熄灭。
+
+```bash
+python scripts/test_hybrid_button_state_video.py \
+  --source test.mp4 \
+  --output runs/predict/test_hybrid_state \
+  --base Qwen/Qwen3-VL-2B-Instruct \
+  --adapter models/button_state_lora \
+  --classifier models/button_state_yolo26n_cls.pt \
+  --batch 8
+```
+
+输出目录包含 `annotated.mp4`、逐框 `predictions.jsonl` 和带耗时、调用次数的 `summary.json`。本机同一段 5.37 秒视频中，去重后共有 1,536 个按钮框，只调用 Qwen 196 次，调用量减少 87.2%，总处理时间约 24.3 秒；2 号按钮约 1.61 秒进入 ON，保持期间没有因 Qwen 单帧或连续误判而跳回 OFF，并在约 4.83 秒确认熄灭。原视频缺少逐帧真值，因此这些结果用于比较速度和时序稳定性，不代表独立准确率。
+
+## YOLO 亮暗分类模型
+
+2026-09-09 使用原有 8,157 条人工标签和新增的 2,654 条人工审核结果，训练了轻量 `YOLO26n-cls` 亮暗分类器。模型接收带 25% 上下文的单按钮裁剪图，输出 `ON` 或 `OFF`；完整面板需要先用 `models/best.pt` 检测按钮位置。
+
+成品权重位于 `models/button_state_yolo26n_cls.pt`，元数据位于 `models/button_state_yolo26n_cls.json`。
+
+```python
+from ultralytics import YOLO
+
+model = YOLO("models/button_state_yolo26n_cls.pt")
+result = model.predict("button_crop.jpg", imgsz=224)[0]
+print(model.names[result.probs.top1], float(result.probs.top1conf))
+```
+
+独立测试集包含 1,067 个裁剪，且与训练集没有原图组交叉。测试准确率为 89.03%，ON 精确率为 71.26%，ON 召回率为 92.75%，ON F1 为 80.60%。模型优先降低亮灯漏判，因此可能把部分 OFF 误报为 ON；部署时建议继续使用时序防跳变，并在目标电梯视频上复核。
+
 ## 文件共享与复现边界
 
 仓库包含代码、依赖说明、已通过 Git LFS 管理的 YOLO 权重、原 Roboflow 检测数据与已有测试素材。亮暗标注 `datasets/`、训练结果 `runs/`、虚拟环境、临时文件及本机输入 `test.mp4` 不纳入此次提交。

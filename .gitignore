@@ -24,6 +24,7 @@ models/*.engine
 models/*.bin
 # The trained deployment checkpoint is intentionally shared through Git LFS.
 !models/best.pt
+!models/button_state_yolo26n_cls.pt
 
 # Training checkpoints must never enter ordinary Git history.
 **/weights/epoch*.pt
